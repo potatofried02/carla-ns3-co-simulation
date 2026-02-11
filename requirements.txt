@@ -1,2 +1,6 @@
-carla==0.9.15
-matplotlib>=3.8.0
+# carla==0.9.15
+matplotlib==3.7.5
+networkx
+numpy
+pandas
+seaborn

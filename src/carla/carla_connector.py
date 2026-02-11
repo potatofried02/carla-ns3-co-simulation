@@ -1,3 +1,4 @@
+from typing import List # Python 3.8 Fixing
 import carla
 import random
 import time
@@ -67,7 +68,7 @@ def spawn_vehicle(world: carla.World, vehicle_type: str = None) -> Optional[carl
         logger.error(f"Error spawning vehicle: {e}")
         return None
 
-def spawn_vehicles(world: carla.World, num_vehicles: int, vehicle_types: list[str] = None) -> list[carla.Vehicle]:
+def spawn_vehicles(world: carla.World, num_vehicles: int, vehicle_types: list[str] = None) -> List[carla.Vehicle]:
     """
     Spawn a number of vehicles in the world
     

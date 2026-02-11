@@ -320,3 +320,6 @@ ns-3/
 ns-allinone-3.44/
 .vscode/
 temp/
+
+# --- Missing Rules from Custom Requirements ---
+ns-3.44/

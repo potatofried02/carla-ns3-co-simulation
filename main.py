@@ -6,7 +6,7 @@ from src.carla.vehicle_data import collect_vehicle_data
 from src.common.vehicle_data_logger import vehicle_data_logger
 from src.common.visualization import VehicleDataVisualizer
 from config.settings import CARLA_HOST, CARLA_PORT, CARLA_TIMEOUT, MAP_NAME
-
+from typing import List, Optional # Python 3.8 Fixing
 def main():
     logger.info("Connecting to Carla simulator")
     client, world = connect_to_carla(CARLA_HOST, CARLA_PORT, CARLA_TIMEOUT)
@@ -30,7 +30,7 @@ def main():
     ego_vehicle = spawn_vehicle(world, 'coupe_2020')
     if not ego_vehicle:
         logger.error("Failed to spawn ego vehicle")
-        bridge.stop()
+        # bridge.stop()
         return
 
     all_vehicles.append(ego_vehicle)
