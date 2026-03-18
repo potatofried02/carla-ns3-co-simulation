@@ -115,6 +115,9 @@ void CamSender::SendCam() {
   m_socket->SendTo(packet, 0, destination);
 
   m_packetsSent++;
+  // Direct cout for debugging
+  std::cout << "[DEBUG] Vehicle " << m_vehicleId << " sent CAM\n";
+  
   NS_LOG_INFO("Vehicle " << m_vehicleId << " sent CAM at "
                          << Simulator::Now().GetSeconds() << "s"
                          << " Position: (" << pos.x << "," << pos.y << ")"
@@ -202,6 +205,61 @@ void CamReceiver::HandleRead(Ptr<Socket> socket) {
                       << " Timestamp: " << camHeader.GetTimestamp() << " ms"
                       << " Distance: " << distance << "m"
                       << " GeoNet sourceId: " << geoHeader.GetSourceId());
+
+          if (!m_rxCallback.IsNull()) {
+              std::ostringstream jsonStream;
+              jsonStream << "{"
+                         << "\"type\":\"v2x_message\","
+                         << "\"receiver_id\":" << GetNode()->GetId() << ","
+                         << "\"sender_id\":" << camHeader.GetVehicleId() << ","
+                         << "\"message_content\":\"CAM\","
+                         << "\"timestamp\":" << Simulator::Now().GetSeconds() << ","
+                         << "\"position\":{\"x\":" << camHeader.GetPositionX() << ",\"y\":" << camHeader.GetPositionY() << "},"
+                         << "\"speed\":" << camHeader.GetSpeed() << ","
+                         << "\"heading\":" << camHeader.GetHeading()
+                         << "}";
+              m_rxCallback(jsonStream.str());
+          }
+
+          // Method 3 (方案 B): Leader 的 CAM 中检测到显著减速时（例如 accel < -3.0 m/s^2），向 Python 发 brake_warning
+          // main.cc 中 SetVehicleId(i+1)，故 Leader 对应 vehicleId 1
+          constexpr uint32_t kLeaderVehicleId = 1;
+          constexpr double kDecelThreshold = -3.0; // 显著减速阈值
+
+          static std::map<std::pair<uint32_t, uint32_t>, double> s_lastSpeed;
+          static std::map<std::pair<uint32_t, uint32_t>, uint64_t> s_lastTs;
+
+          uint32_t myId = GetNode()->GetId();
+          uint32_t vId = camHeader.GetVehicleId();
+          double curSpeed = camHeader.GetSpeed();
+          uint64_t curTs = camHeader.GetTimestamp();
+
+          if (!m_rxCallback.IsNull() && vId == kLeaderVehicleId) {
+              std::pair<uint32_t, uint32_t> key = {myId, vId};
+              if (s_lastTs.find(key) != s_lastTs.end()) {
+                  double dt = (curTs - s_lastTs[key]) / 1000.0;
+                  if (dt > 0.0) {
+                      double accel = (curSpeed - s_lastSpeed[key]) / dt;
+                      if (accel < kDecelThreshold || (curSpeed < 1.0 && s_lastSpeed[key] >= 1.0)) {
+                          std::ostringstream bw;
+                          bw << "{"
+                             << "\"type\":\"brake_warning\","
+                             << "\"from_vehicle_id\":" << kLeaderVehicleId << ","
+                             << "\"source\":\"cam\","
+                             << "\"ns3_time\":" << Simulator::Now().GetSeconds() << ","
+                             << "\"accel\":" << accel << ","
+                             << "\"speed\":" << curSpeed
+                             << "}";
+                          m_rxCallback(bw.str());
+                      }
+                  }
+              }
+              s_lastSpeed[key] = curSpeed;
+              s_lastTs[key] = curTs;
+          }
+          
+          // Direct cout for debugging
+          std::cout << "[DEBUG] Node " << GetNode()->GetId() << " received CAM from Vehicle " << camHeader.GetVehicleId() << "\n";
 
           m_packetsReceived++;
         }

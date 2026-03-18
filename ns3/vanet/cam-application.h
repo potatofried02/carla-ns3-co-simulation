@@ -5,6 +5,7 @@
 #include "ns3/nstime.h"
 #include "ns3/random-variable-stream.h"
 #include "ns3/socket.h"
+#include "ns3/callback.h"
 
 namespace ns3 {
 
@@ -41,6 +42,8 @@ public:
     CamReceiver();
     ~CamReceiver() override;
 
+    void SetRxCallback(Callback<void, std::string> cb) { m_rxCallback = cb; }
+
 private:
     void StartApplication() override;
     void StopApplication() override;
@@ -49,6 +52,7 @@ private:
 
     Ptr<Socket> m_socket;
     uint32_t m_packetsReceived;
+    Callback<void, std::string> m_rxCallback;
 };
 
 }

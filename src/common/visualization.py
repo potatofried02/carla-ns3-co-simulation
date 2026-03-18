@@ -51,14 +51,8 @@ class VehicleDataVisualizer:
             return None
 
     def plot_vehicle_trajectories(self):
-        """Plot vehicle trajectories on the map"""
-        map_img = self._load_map()
-        if map_img is None:
-            logger.error("Failed to load map image")
-            return
-
+        """Plot vehicle trajectories on the map (or axes with same extent if no map image)."""
         trajectories = {}
-
         for frame in self.data["frames"]:
             for vehicle in frame["vehicles"]:
                 vid = vehicle["id"]
@@ -69,17 +63,22 @@ class VehicleDataVisualizer:
                 trajectories[vid]["y"].append(pos["y"])
 
         fig, ax = plt.subplots(figsize=(10, 8))
-        ax.imshow(map_img, extent=[MAP_X_MIN, MAP_X_MAX, MAP_Y_MIN, MAP_Y_MAX], origin='lower', alpha=0.8, aspect='equal')
+        map_img = self._load_map()
+        if map_img is not None:
+            ax.imshow(map_img, extent=[MAP_X_MIN, MAP_X_MAX, MAP_Y_MIN, MAP_Y_MAX], origin='lower', alpha=0.8, aspect='equal')
+            ax.set_title("Vehicle Trajectories on Map")
+        else:
+            ax.set_xlim(MAP_X_MIN, MAP_X_MAX)
+            ax.set_ylim(MAP_Y_MIN, MAP_Y_MAX)
+            ax.set_aspect('equal')
+            ax.set_title("Vehicle Trajectories (no map image; add maps/town10_map.png for road layer)")
+            logger.warning("No map image found; trajectories plotted on empty axes. Add maps/town10_map.png for road layer.")
 
         for vid, coords in trajectories.items():
             ax.plot(coords["x"], coords["y"], label=f'Vehicle {vid}', linestyle='--')
-    
         ax.legend(loc='lower left')
-        ax.set_xlabel("X Position")
-        ax.set_ylabel("Y Position")
-        ax.set_title("Vehicle Trajectories on Map")
-
-
+        ax.set_xlabel("X Position (m)")
+        ax.set_ylabel("Y Position (m)")
         ax.grid(True)
         plt.tight_layout()
         plt.savefig(os.path.join(self.output_dir, 'trajectories.pdf'))

@@ -1,7 +1,9 @@
+import os
+
 # CARLA settings
-CARLA_HOST = 'localhost'
+CARLA_HOST = os.getenv('CARLA_HOST', 'localhost')
 CARLA_PORT = 2000
-CARLA_TIMEOUT = 10.0
+CARLA_TIMEOUT = 120.0
 
 # MAP settings
 MAP_NAME = 'Town10HD_Opt'
